@@ -1,12 +1,5 @@
-/*
-This file forms part of the NHS Choices Heart Age Tool.
-It is ©2020 NHS Choices.
-It is released under version 3 of the GNU General Public License
-Source code, including a copy of the license is available at https://github.com/Antbits/heartage
+const fs = require('fs');
 
-It contains code derived from https://github.com/BritCardSoc/JBS3Risk released by University of Cambridge.
-It also contains code derived from http://qrisk.org/lifetime/QRISK-lifetime-2011-opensource.v1.0.tgz released by ClinRisk Ltd.
-*/
 function heartageObj(src) {
     var self = this;
     this.lifetimeObj = null
@@ -17,44 +10,28 @@ function heartageObj(src) {
         'user_data': null
     };
     this.data = null;
-    this.init = function(src) {
-        self.loadJSON(function(response) {
-            self.lookup_data = JSON.parse(response);
-            statusObj.status_str = 'Lookup data loaded';
-            statusObj.status = 1;
-            self.lifetimeObj = new Q65_lifetime(self.lookup_data);
-        }, src);
+    this.init = function (src) {
+        self.lookup_data = JSON.parse(fs.readFileSync(src, "utf-8"));
+        statusObj.status_str = 'Lookup data loaded';
+        statusObj.status = 1;
+        self.lifetimeObj = new Q65_lifetime(self.lookup_data);
     }
-    this.getStatus = function() {
+    this.getStatus = function () {
         return statusObj;
     }
-    this.getHeartage = function(data) {
-		if (statusObj.status < 1) {
-			return statusObj;
-		} else {
-			statusObj.result = null;
-			statusObj.user_data = data;
-			statusObj.result = self.lifetimeObj.lifetimeRisk(data)
-			statusObj.status_str = 'Result set successfully generated';
-			statusObj.status = 2;
-			return statusObj;
-		}
-	}
-        // utilities;
-    this.loadJSON = function(callback, src) {
-            var xobj = new XMLHttpRequest();
-            //xobj.overrideMimeType("application/json");// caused failure to load on dev server
-            xobj.open('GET', src, true);
-            xobj.onreadystatechange = function() {
-                if (xobj.readyState == 4 && xobj.status == "200") {
-                    callback(xobj.responseText);
-                } else {
-                    statusObj.status_str = 'Lookup data not found please check src parameter';
-                }
-            }
-            xobj.send(null);;
+    this.getHeartage = function (data) {
+        if (statusObj.status < 1) {
+            return statusObj;
+        } else {
+            statusObj.result = null;
+            statusObj.user_data = data;
+            statusObj.result = self.lifetimeObj.lifetimeRisk(data)
+            statusObj.status_str = 'Result set successfully generated';
+            statusObj.status = 2;
+            return statusObj;
         }
-        // Qrisk gendered routines;
+    }
+    // Qrisk gendered routines;
     function Q65_female_cvd(data_obj) {
         for (var i in data_obj) {
             eval('var ' + i + ' = ' + data_obj[i]);
@@ -126,7 +103,7 @@ function heartageObj(src) {
         a += b_treatedhyp * 0.3146452536778831000000000;
         a += b_type2 * 0.4700445024972483300000000;
         a += fh_cvd * 0.6101222792348441900000000;
-		//console.log('MALE cvd = '+a)
+        //console.log('MALE cvd = '+a)
         return a;
     }
 
@@ -214,7 +191,7 @@ function heartageObj(src) {
             town: -0.164980158209801
         }];
         this.lookup = lookup_data;
-        this.find_biggest_t_below_number_in_array = function(number, array, arrayNumberOfRows) {
+        this.find_biggest_t_below_number_in_array = function (number, array, arrayNumberOfRows) {
             var i;
             var found = 0;
             if (array._t[0] >= number) {
@@ -233,7 +210,7 @@ function heartageObj(src) {
             }
             return (i);
         }
-        this.produceLifetimeRiskTable = function(timeTable, from, to, a_cvd, a_death, sex, followupYear) {
+        this.produceLifetimeRiskTable = function (timeTable, from, to, a_cvd, a_death, sex, followupYear) {
             var resultArray = new Array();
             var annualRiskTable = new Array();
             var annualRiskTable_int = new Array();
@@ -298,10 +275,11 @@ function heartageObj(src) {
                     annualRiskTable.push(lastRow);
                     annualRiskTable_int.push(lastRow_int);
                 };
-                if (t >= followupYear - 1) {;
+                if (t >= followupYear - 1) {
+                    ;
                     nYearRisk = lastRow.cif_cvd;
                 }
-				
+
                 timeTableIndex++;
             }
             annualRiskTable.push(lastRow);
@@ -317,7 +295,7 @@ function heartageObj(src) {
                 "hazard": self.getNoDeathHazardAt(annualRiskTable, 0)
             }
         }
-        this.produceLifetimeRiskTable_int = function(timeTable, from, to, a_cvd, a_death, sex, followupYear) {
+        this.produceLifetimeRiskTable_int = function (timeTable, from, to, a_cvd, a_death, sex, followupYear) {
             var timeTableIndex = from;
             var timeTableIndex_int = from;
             var t0 = parseInt(timeTable[timeTableIndex][0]);
@@ -330,7 +308,8 @@ function heartageObj(src) {
             var exp_a_death = Math.exp(a_death);
             var t = t0 - 1;
             var f = from;
-            for (i = f - from; i < (timeTable.length - from - 2); f++, i++) {;
+            for (i = f - from; i < (timeTable.length - from - 2); f++, i++) {
+                ;
                 var baseHazard = {
                     "death": timeTable[timeTableIndex][1] * exp_a_death,
                     "cvd": timeTable[timeTableIndex][2] * exp_a_cvd
@@ -393,16 +372,16 @@ function heartageObj(src) {
                 "hazard": self.getNoDeathHazardAt(annualRiskTable, 0)
             }
         }
-        this.getNoDeathHazardAt = function(rows, index) {
+        this.getNoDeathHazardAt = function (rows, index) {
             index = Math.min(index, rows.length - 2);
             if (index < 0) {
                 return 0;
             } else {
-				
+
                 return (rows[index + 1].cvd_noDeath - rows[index].cvd_noDeath) / rows[index].S_noDeath;
             }
         }
-        this.lifetimeRisk = function(user_data) {
+        this.lifetimeRisk = function (user_data) {
             var cage = user_data.age;
             var sex = user_data.gender;
             var noOfFollowupYears = compare_period;
@@ -418,7 +397,7 @@ function heartageObj(src) {
                 timeTableRaw = self.lookup.male;
                 arrayNumberOfRows = self.lookup.male._t.length;
             };
-			
+
             var possibly_younger = false;
             var sage = 30;
             var lage = 95;
@@ -434,7 +413,7 @@ function heartageObj(src) {
             userResult = self.produceLifetimeRiskTable(timeTable, startRow, finishRow, a_cvd, a_death, sex, lage - sage);
             life = (cage + userResult.life);
             userResult_int = self.produceLifetimeRiskTable_int(timeTable, startRow, finishRow, a_cvd, a_death, sex, lage - sage);
-			
+
             followupIndex = cage - sage + noOfFollowupYears;
             base_data = {};
             base_data.town = centerings[sex].town;
@@ -464,7 +443,7 @@ function heartageObj(src) {
                     if (i == 0) {
                         possibly_younger = true;
                     }
-					
+
                     break;
                 }
             };
@@ -489,7 +468,7 @@ function heartageObj(src) {
                 'heartage': heartage,
                 'risk': userResult.hazard,
                 '10_yr_risk': Math.round((userResult.annualRiskTable_int[compare_index].cvd_noDeath) * 1000) / 10,
-				'nYearRisk': userResult.nYearRisk
+                'nYearRisk': userResult.nYearRisk
             }
         }
 
@@ -503,3 +482,33 @@ function heartageObj(src) {
     }
     this.init(src);
 }
+
+src = "../z_lookupData.js"
+
+input = {
+    "age": 35,
+    "b_AF": false,
+    "b_ra": false,
+    "b_renal": false,
+    "b_treatedhyp": false,
+    "b_type2": false,
+    "bmi": 30,
+    "ethrisk": 1, // baseline value
+    "town": -0.81, // baseline value
+    // "surv": 95 - age,
+    "tc": 0,
+    // "bmi_rounded": parseFloat(bmi.toFixed(1)),
+    "fh_cvd": 0,
+    "gender": 1, // 0 is female
+    "rati": 4.583333333333334, // baseline value
+    "sbp": 130, // baseline value
+    "smoke_cat": 0
+}
+
+
+var obj = {
+    heartageObj: heartageObj
+};
+obj.heartageObj(src)
+var heart_age = obj.getHeartage(input)
+console.log(heart_age);
